@@ -56,7 +56,7 @@ const { getOptionValue } = {
       '--preserve-symlinks': false,
       '--preserve-symlinks-main': false,
       '--input-type': undefined,
-      '--experimental-specifier-resolution': 'explicit'
+      '--experimental-specifier-resolution': 'node'
     })[opt]
   }
 }
@@ -276,7 +276,7 @@ function resolveExtensionsWithTryExactName(search) {
 const extensions = Array.from(new Set([
   ...(preferTsExts ? tsExtensions : []),
   ...jsExtensions,
-  '.json', '.node', '.mjs',
+  '.json', '.node', '.mjs', '.js',
   ...tsExtensions
 ]));
 function resolveExtensions(search) {
@@ -293,18 +293,18 @@ function resolveExtensions(search) {
 // }
 
 function finalizeResolution(resolved, base) {
-  // if (getOptionValue('--experimental-specifier-resolution') === 'node') {
-  //   let file = resolveExtensionsWithTryExactName(resolved);
-  //   if (file !== undefined) return file;
-  //   if (!StringPrototypeEndsWith(resolved.pathname, '/')) {
-  //     file = resolveIndex(new URL(`${resolved.pathname}/`, base));
-  //   } else {
-  //     file = resolveIndex(resolved);
-  //   }
-  //   if (file !== undefined) return file;
-  //   throw new ERR_MODULE_NOT_FOUND(
-  //     resolved.pathname, fileURLToPath(base), 'module');
-  // }
+  if (getOptionValue('--experimental-specifier-resolution') === 'node') {
+    let file = resolveExtensionsWithTryExactName(resolved);
+    if (file !== undefined) return file;
+    if (!StringPrototypeEndsWith(resolved.pathname, '/')) {
+      file = resolveIndex(new URL(`${resolved.pathname}/`, base));
+    } else {
+      file = resolveIndex(resolved);
+    }
+    if (file !== undefined) return file;
+    throw new ERR_MODULE_NOT_FOUND(
+      resolved.pathname, fileURLToPath(base), 'module');
+  }
 
   let file = resolveExtensionsWithTryExactName(resolved);
   if (file !== undefined) return file;
@@ -477,15 +477,15 @@ function packageMainResolve(packageJSONUrl, packageConfig, base) {
       const path = fileURLToPath(resolved);
       if (tryStatSync(path).isFile()) return resolved;
     }
-    // if (getOptionValue('--experimental-specifier-resolution') === 'node') {
-    //   if (packageConfig.main !== undefined) {
-    //     return finalizeResolution(
-    //       new URL(packageConfig.main, packageJSONUrl), base);
-    //   } else {
-    //     return finalizeResolution(
-    //       new URL('index', packageJSONUrl), base);
-    //   }
-    // }
+    if (getOptionValue('--experimental-specifier-resolution') === 'node') {
+      if (packageConfig.main !== undefined) {
+        return finalizeResolution(
+          new URL(packageConfig.main, packageJSONUrl), base);
+      } else {
+        return finalizeResolution(
+          new URL('index', packageJSONUrl), base);
+      }
+    }
     if (packageConfig.type !== 'module') {
       return legacyMainResolve(packageJSONUrl, packageConfig);
     }
