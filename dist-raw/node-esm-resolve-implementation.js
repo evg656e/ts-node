@@ -288,9 +288,9 @@ function resolveExtensions(search) {
   return undefined;
 }
 
-// function resolveIndex(search) {
-//   return resolveExtensions(new URL('index', search));
-// }
+function resolveIndex(search) {
+  return resolveExtensions(new URL('index', search));
+}
 
 function finalizeResolution(resolved, base) {
   if (getOptionValue('--experimental-specifier-resolution') === 'node') {
