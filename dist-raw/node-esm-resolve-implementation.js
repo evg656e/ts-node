@@ -50,16 +50,29 @@ const {
   Stats,
 } = require('fs');
 // const { getOptionValue } = require('internal/options');
-const { getOptionValue } = {
-  getOptionValue: (opt) => {
-    return ({
+const { getOptionValue } = (() => {
+  const getOptions = () => require('arg')({
+    '--preserve-symlinks': Boolean,
+    '--preserve-symlinks-main': Boolean,
+    '--input-type': String,
+    '--experimental-specifier-resolution': String
+  }, {
+    argv: process.execArgv,
+    permissive: true
+  });
+  const options = {
       '--preserve-symlinks': false,
       '--preserve-symlinks-main': false,
       '--input-type': undefined,
-      '--experimental-specifier-resolution': 'node'
-    })[opt]
-  }
-}
+      '--experimental-specifier-resolution': 'explicit',
+      ...getOptions()
+  };
+  return {
+      getOptionValue: (opt) => {
+        return options[opt];
+      }
+  };
+})();
 const { sep } = require('path');
 
 const preserveSymlinks = getOptionValue('--preserve-symlinks');
@@ -276,7 +289,7 @@ function resolveExtensionsWithTryExactName(search) {
 const extensions = Array.from(new Set([
   ...(preferTsExts ? tsExtensions : []),
   ...jsExtensions,
-  '.json', '.node', '.mjs', '.js',
+  '.js', '.json', '.node', '.mjs', // why '.js' was omit here? according to https://github.com/nodejs/node/blob/d01a06a916efd30844e1e0a38e79dc0054fc4451/lib/internal/modules/esm/resolve.js#L240 it should be default extension
   ...tsExtensions
 ]));
 function resolveExtensions(search) {
