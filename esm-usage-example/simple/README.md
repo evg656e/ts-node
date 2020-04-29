@@ -1,7 +1,7 @@
 To run the experiment:
 
 ```
-cd ./esm-usage-example # Must be in this directory
+cd ./esm-usage-example/simple # Must be in this directory
 node -v # Must be using node v13
 
 # Install the github branch via npm

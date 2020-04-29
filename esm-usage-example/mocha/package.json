@@ -1,0 +1,14 @@
+{
+  "type": "module",
+  "scripts": {
+    "test": "node node_modules/mocha/bin/mocha",
+    "test-ts": "node --loader ts-node/esm node_modules/mocha/bin/mocha"
+  },
+  "devDependencies": {
+    "@types/mocha": "^7.0.2",
+    "@types/node": "^13.13.4",
+    "mocha": "^7.1.2",
+    "ts-node": "github:TypeStrong/ts-node#ab/esm-support",
+    "typescript": "^3.8.3"
+  }
+}
