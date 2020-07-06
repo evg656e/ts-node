@@ -51,29 +51,81 @@ const {
 } = require('fs');
 // const { getOptionValue } = require('internal/options');
 const { getOptionValue } = (() => {
-  let options;
-  function parseOptions() {
-    if (!options) {
-      options = {
-      '--preserve-symlinks': false,
-      '--preserve-symlinks-main': false,
-      '--input-type': undefined,
-      '--experimental-specifier-resolution': 'explicit',
-      ...parseExecArgv()
-      }
+  function ParseNodeOptionsEnvVar(node_options, errors) {
+    const env_argv = [];
+
+    let is_in_string = false;
+    let will_start_new_arg = true;
+    for (let index = 0; index < node_options.length; ++index) {
+        let c = node_options[index];
+
+        // Backslashes escape the following character
+        if (c === '\\' && is_in_string) {
+            if (index + 1 === node_options.length) {
+                errors.push("invalid value for NODE_OPTIONS " +
+                    "(invalid escape)\n");
+                return env_argv;
+            } else {
+                c = node_options[++index];
+            }
+        } else if (c === ' ' && !is_in_string) {
+            will_start_new_arg = true;
+            continue;
+        } else if (c === '"') {
+            is_in_string = !is_in_string;
+            continue;
+        }
+
+        if (will_start_new_arg) {
+            env_argv.push(c);
+            will_start_new_arg = false;
+        } else {
+            env_argv[env_argv.length - 1] += c;
+        }
     }
-  };
-  function parseExecArgv () {
+
+    if (is_in_string) {
+        errors.push("invalid value for NODE_OPTIONS " +
+            "(unterminated string)\n");
+    }
+    return env_argv;
+  }
+
+  function getNodeOptionsEnvArgv() {
+    const errors = [];
+    const envArgv = ParseNodeOptionsEnvVar(process.env.NODE_OPTIONS || '', errors);
+    if (errors.length !== 0) {
+      // TODO: handle errors somehow
+    }
+    return envArgv;
+  }
+
+  function parseArgv(argv) {
     return require('arg')({
       '--preserve-symlinks': Boolean,
       '--preserve-symlinks-main': Boolean,
       '--input-type': String,
       '--experimental-specifier-resolution': String
     }, {
-      argv: process.execArgv,
+      argv,
       permissive: true
     });
   }
+
+  let options;
+  function parseOptions() {
+    if (!options) {
+      options = {
+        '--preserve-symlinks': false,
+        '--preserve-symlinks-main': false,
+        '--input-type': undefined,
+        '--experimental-specifier-resolution': 'explicit',
+        ...parseArgv(getNodeOptionsEnvArgv()),
+        ...parseArgv(process.execArgv)
+      }
+    }
+  };
+
   return {
       getOptionValue: (opt) => {
         parseOptions();
